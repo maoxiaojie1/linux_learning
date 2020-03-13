@@ -4,38 +4,53 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <fcntl.h>
+#include <sys/time.h>
+#include <time.h>
+#include <errno.h>
 #include "log.h"
 
 int main(int argc, char *argv[])
 {
-    /*struct sockaddr_in clSock;
-    int fd = open("./tt", O_CREAT | O_RDWR | O_APPEND);
-    if (fd < 0)
+    struct sockaddr_in svSock;
+    memset(&svSock, 0, sizeof(svSock));
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    svSock.sin_family = AF_INET;
+    svSock.sin_port = htons(12345);
+    svSock.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+    LOG("connecting...\n");
+    if (connect(sockfd, &svSock, sizeof(svSock)) == -1)
     {
+        LOG("connect failed!\n");
+        close(sockfd);
         return 0;
     }
-    //int stdout_fd = dup(STDOUT_FILENO);
-    dup2(fd, STDOUT_FILENO);
-    const char str[] = "llokjjk\n";
-    int num = write(fd, str, sizeof(str));
-    printf("Ssssss\n");
-    fflush(stdout);
-    //close(fd);
-    //int stdout_fd = dup(STDOUT_FILENO);
-    //dup2(STDOUT_FILENO, fd);
-    //fdopen(1, 'rb+');
-    int ttyfd = open("/dev/tty", O_RDWR, 0644);
-    dup2(ttyfd, STDOUT_FILENO);
-    printf("ppppppp\n");*/
-    FILE *fp;
-    fp = fopen("./phs_test_used_log.txt", "a+");
-    fputs("pplpkpk\n", fp);
-    fclose(fp);
-    LOG("ff\n");
-    const char *str = "";
-    printf("end:%cdd", ' ');
-    sleep(10);
-    printf("ccsdasda\n");
+    LOG("已连接服务器(%s)\n", currTime("%F %T %p"));
+
+    char *rvmsg = (char *)malloc(100);
+    memset(rvmsg, 0, 100);
+    
+    //recv(newfd, rvmsg, 100, MSG_WAITALL);
+    int realLen = read(sockfd, rvmsg, 100);
+    if (realLen == -1)
+    {
+        LOG("read data failed!\n");
+    }
+    LOG("recevice data: %s\n", rvmsg);
+    free(rvmsg);
+
+    const char msg[] = "hello world\n";
+    if (send(sockfd, msg, sizeof(msg), MSG_NOSIGNAL) == -1)
+    {
+        LOG("send data failed!\n");
+        if (errno == EPIPE)
+        {
+            LOG("server has closed!\n");
+            return 0;
+        }
+    }
+    close(sockfd);
+    return 0;
 
     return 0;
 }

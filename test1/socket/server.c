@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <time.h>
+#include <errno.h>
 #include "log.h"
 
 #define MAX_LISTEN_NUM 10
@@ -49,8 +50,28 @@ int main(int argc, char *argv[])
         LOG("accept server socket failed!\n");
         return 0;
     }
-    LOG("客户已接入(IP: %s, time: %s)：", inet_ntoa(clAddr.sin_addr), currTime("%F %T %p"));
+    LOG("客户已接入(IP: %s, %s)\n", inet_ntoa(clAddr.sin_addr), currTime("%F %T %p"));
 
+    const char msg[] = "hello world\n";
+    if (send(newfd, msg, sizeof(msg), MSG_NOSIGNAL) == -1)
+    {
+        LOG("send data failed!\n");
+        if (errno == EPIPE)
+        {
+            LOG("client has closed!\n");
+            return 0;
+        }
+    }
+    char *rvmsg = (char *)malloc(100);
+    memset(rvmsg, 0, 100);
+    //recv(newfd, rvmsg, 100, MSG_WAITALL);
+    int realLen = read(newfd, rvmsg, 100);
+    if (realLen == -1)
+    {
+        LOG("read data failed!\n");
+    }
+    LOG("recevice data: %s\n", rvmsg);
+    free(rvmsg);
     close(newfd);
     close(sockfd);
     return 0;

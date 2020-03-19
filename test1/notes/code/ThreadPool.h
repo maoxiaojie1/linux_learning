@@ -6,7 +6,6 @@
 
 class ThreadPool
 {
-
 public:
     ThreadPool(/* args */);
     ~ThreadPool();
